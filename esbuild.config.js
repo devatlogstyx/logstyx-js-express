@@ -3,7 +3,7 @@ const path = require("path");
 
 esbuild.build({
   entryPoints: [path.resolve(__dirname, "src", "entry", "index.js")],
-  outfile: "dist/logstyx-js-node.js",
+  outfile: "dist/logstyx-js-express.js",
   platform: "node",
   format: "cjs",
   bundle: true,
