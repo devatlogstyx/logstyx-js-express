@@ -73,7 +73,8 @@ module.exports = (options) => {
         logLevels: {
             success: 'SUCCESS',  
             error: 'ERROR',
-            critical: 'CRITICAL'
+            critical: 'CRITICAL',
+            warning:"WARNING"
         }
     });
 

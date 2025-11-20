@@ -20,7 +20,8 @@ function createExpressMiddleware(options = {}) {
         logLevels: options.logLevels || {
             success: 'SUCCESS',
             error: 'ERROR',
-            critical: 'CRITICAL'
+            critical: 'CRITICAL',
+            warning: "WARNING"
         },
 
         ...options
@@ -54,6 +55,10 @@ function createSuccessHandler(config) {
                         logSuccess(req, res, method, args, config);
                     }
 
+                    if (!logged && shouldLogWarning(res, req, config)) {
+                        logged = true;
+                        logWarning(req, res, method, args, config);
+                    }
                     return originals[method].apply(this, args);
                 };
             })(m);
@@ -85,6 +90,25 @@ function logSuccess(req, res, method, args, config) {
     };
 
     config.logstyx[config.logLevels.success](logData);
+}
+
+function logWarning(req, res, method, args, config) {
+    const responseTime = config.trackPerformance ? Date.now() - req._startTime : null;
+    const requestPayload = buildFinalPayload(req, config);
+
+    const logData = {
+        title: `${req.method} ${req.path}`,
+        message: `Slow request detected (${responseTime}ms)`, 
+        ...requestPayload,
+        body: redactObject(req.body, config.redactFields),
+        response: method === "json" || method === "send" ?
+            redactObject(args[0], config.redactFields) : null,
+        responseTime: responseTime,
+        statusCode: res.statusCode,
+        isSlow: responseTime > config.slowRequestThreshold
+    };
+
+    config.logstyx[config.logLevels.warning](logData);
 }
 
 // Error Handler
@@ -167,11 +191,36 @@ function findAdminInRequest(req) {
         req.session?.admin;
 }
 
-function shouldLogSuccess(res, req) {
-    return res.statusCode >= 200 &&
-        res.statusCode < 300 &&
-        ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
+function shouldLogSuccess(res, req, config) {
+    const isSuccessful = res.statusCode >= 200 && res.statusCode < 300;
+    const isMutation = ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
+    
+    if (!isMutation) return false;
+    
+    // Don't log as success if it's slow (will be logged as warning instead)
+    if (config?.trackPerformance && req._startTime) {
+        const responseTime = Date.now() - req._startTime;
+        if (responseTime > config.slowRequestThreshold) {
+            return false;
+        }
+    }
+    
+    return isSuccessful;
 }
+
+
+function shouldLogWarning(res, req, config) {
+    if (!config?.trackPerformance || !req._startTime) {
+        return false;
+    }
+
+    const responseTime = Date.now() - req._startTime;
+    const isSlow = responseTime > config.slowRequestThreshold;
+    const isSuccessful = res.statusCode >= 200 && res.statusCode < 300;
+    
+    return isSuccessful && isSlow;
+}
+
 
 function buildFinalPayload(req, config) {
     let context = config.buildRequestPayload(req);
