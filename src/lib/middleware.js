@@ -78,7 +78,7 @@ function logSuccess(req, res, method, args, config) {
     const requestPayload = buildFinalPayload(req, config);
 
     const logData = {
-        title: `${req.method} ${req.path}`,
+        title: `${req.method} ${req.originalUrl}`,
         message: "Request completed successfully",
         ...requestPayload,
         body: redactObject(req.body, config.redactFields),
@@ -97,7 +97,7 @@ function logWarning(req, res, method, args, config) {
     const requestPayload = buildFinalPayload(req, config);
 
     const logData = {
-        title: `${req.method} ${req.path}`,
+        title: `${req.method} ${req.originalUrl}`,
         message: `Slow request detected (${responseTime}ms)`,
         ...requestPayload,
         body: redactObject(req.body, config.redactFields),
@@ -131,7 +131,7 @@ function logError(err, req, config) {
     const requestPayload = buildFinalPayload(req, config);
 
     const logData = {
-        title: `${req.method} ${req.path}`,
+        title: `${req.method} ${req.originalUrl}`,
         message: err?.message,
         ...requestPayload,
         stack: err?.stack,
@@ -149,7 +149,7 @@ function logError(err, req, config) {
 // Not Found Handler
 function createNotFoundHandler(config) {
     return (req, res, next) => {
-        const notFoundError = new Error(`Route not found: ${req.method} ${req.path}`);
+        const notFoundError = new Error(`Route not found: ${req.method} ${req.originalUrl}`);
         notFoundError.statusCode = 404;
         notFoundError.code = 'NOT_FOUND';
         next(notFoundError);
