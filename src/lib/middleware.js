@@ -89,7 +89,7 @@ function logSuccess(req, res, method, args, config) {
         isSlow: responseTime > config.slowRequestThreshold
     };
 
-    config.logstyx[config.logLevels.success](logData);
+    config.logstyx.send(config.logLevels.success, logData);
 }
 
 function logWarning(req, res, method, args, config) {
@@ -98,7 +98,7 @@ function logWarning(req, res, method, args, config) {
 
     const logData = {
         title: `${req.method} ${req.path}`,
-        message: `Slow request detected (${responseTime}ms)`, 
+        message: `Slow request detected (${responseTime}ms)`,
         ...requestPayload,
         body: redactObject(req.body, config.redactFields),
         response: method === "json" || method === "send" ?
@@ -108,7 +108,7 @@ function logWarning(req, res, method, args, config) {
         isSlow: responseTime > config.slowRequestThreshold
     };
 
-    config.logstyx[config.logLevels.warning](logData);
+    config.logstyx.send(config.logLevels.warning, logData);
 }
 
 // Error Handler
@@ -142,7 +142,7 @@ function logError(err, req, config) {
     };
 
     const logLevel = err.statusCode >= 500 ? config.logLevels.critical : config.logLevels.error;
-    config.logstyx[logLevel](logData);
+    config.logstyx.send(logLevel, logData);
 }
 
 // Not Found Handler
@@ -194,9 +194,9 @@ function findAdminInRequest(req) {
 function shouldLogSuccess(res, req, config) {
     const isSuccessful = res.statusCode >= 200 && res.statusCode < 300;
     const isMutation = ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
-    
+
     if (!isMutation) return false;
-    
+
     // Don't log as success if it's slow (will be logged as warning instead)
     if (config?.trackPerformance && req._startTime) {
         const responseTime = Date.now() - req._startTime;
@@ -204,7 +204,7 @@ function shouldLogSuccess(res, req, config) {
             return false;
         }
     }
-    
+
     return isSuccessful;
 }
 
@@ -217,7 +217,7 @@ function shouldLogWarning(res, req, config) {
     const responseTime = Date.now() - req._startTime;
     const isSlow = responseTime > config.slowRequestThreshold;
     const isSuccessful = res.statusCode >= 200 && res.statusCode < 300;
-    
+
     return isSuccessful && isSlow;
 }
 
