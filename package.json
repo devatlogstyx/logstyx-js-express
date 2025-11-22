@@ -1,6 +1,6 @@
 {
   "name": "logstyx-js-express",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "logstyx sdk for expressjs",
   "main": "./dist/logstyx-js-express.js",
   "scripts": {
